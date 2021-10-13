@@ -7,6 +7,10 @@ import threading
 import logging
 from datetime import datetime
 
+#Ip a la que se envía un archivo
+
+serveraddressport=('localhost',10000)
+#Puerto
 #Separador
 SEPARATOR = "SEPARATOR"
 
@@ -49,7 +53,7 @@ def md5(connection, fname, hashrecibido):
         mssg = b'Los valores son diferentes'
         exito = 0
     exitos.append(exito)
-    connection.send(mssg)
+    connection.sendto(mssg, serveraddressport)
 
 #Función para crear el log
 def log(filenames, filesizes, exitos, tiempos):
@@ -70,11 +74,11 @@ def log(filenames, filesizes, exitos, tiempos):
 
 #Función para crear los clientes
 def createSocket(i, num_clientes):
-    sock = socket.create_connection(('localhost', 10000))
+    sock = socket.socket((socket.AF_INET, socket.SOCK_DGRAM))
     conexiones.append(i)
     while True:
         message = b'Listo para recibir'
-        sock.send(message)
+        sock.sendto(message, serveraddressport)
         received = sock.recv(BUFFER_SIZE).decode('ISO-8859-1')
         if('SEPARATOR' in received):
             filenameF, filesizeF = received.split(SEPARATOR)
@@ -121,6 +125,6 @@ if __name__ == "__main__":
                 fin = True
                 break
         finally:
-            filenameLog = log(filenames, filesizes, exitos, tiempos)
+            #filenameLog = log(filenames, filesizes, exitos, tiempos)
             if fin:
                 break

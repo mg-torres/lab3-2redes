@@ -6,25 +6,25 @@ import hashlib
 import threading
 import time
 
-# Create a TCP/IP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Create a UDP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Bind the socket to the address given on the command line
 server_address = ('', 10000)
 sock.bind(server_address)
 print('starting up on {} port {}'.format(*sock.getsockname()))
-sock.listen(25)
+#sock.listen(25)
 
 # Separador
 SEPARATOR = "SEPARATOR"
 
 #Archivos a enviar
-file1 = "Archivos/PRUEBA.txt"
-file2 = "Archivos/archivo1.txt"
+file1 = "Archivos/temp_100MB_file.txt"
+file2 = "Archivos/temp_250MB_file.txt"
 
 #Nombre archivos a enviar
-filename1 = "PRUEBA.txt"
-filename2 = "archivo1.txt"
+filename1 = "temp_100MB_file.txt"
+filename2 = "temp_250MB_file.txt"
 
 #Tamaño de los archivos
 filesize1 = os.path.getsize(file1)
@@ -63,7 +63,7 @@ def archivo(num_archivo, c):
         tamArchivo = filesize2
         arch = file2
     start_time = datetime.now()
-    c.send(f"{nombreArchivo}{SEPARATOR}{tamArchivo}".encode())
+    c.sendto(f"{nombreArchivo}{SEPARATOR}{tamArchivo}".encode(),server_address )
     with open(arch, "rb") as f:
         while True:
             bytes_read = f.read(BUFFER_SIZE)
@@ -72,9 +72,9 @@ def archivo(num_archivo, c):
                 tiempo = end_time - start_time
                 tiempos.append(tiempo)
                 break
-            c.send(bytes_read)
+            c.sendto(bytes_read, server_address)
     message = b'Finaliza transmision'
-    c.send(message)
+    c.sendto(message, server_address)
     md5(c, arch)
 
 #Función de creación y envío de hash
@@ -86,7 +86,7 @@ def md5(connection, fname):
             if not data:
                 break
             md5.update(data)
-    connection.send(md5.hexdigest().encode('ISO-8859-1'))
+    connection.sendto(md5.hexdigest().encode('ISO-8859-1'), server_address)
     data = connection.recv(BUFFER_SIZE)
     mensaje2 = data.decode('utf-8')
     exito = 0
@@ -146,7 +146,7 @@ if __name__ == "__main__":
                 fin = True
                 break
     finally:
-        filename = log(nomArchivo, tamArchivo, exitos, tiempos)
+        #filename = log(nomArchivo, tamArchivo, exitos, tiempos)
         connection.close()
         if fin:
             break
