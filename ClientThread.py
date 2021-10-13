@@ -38,6 +38,7 @@ server_address = (ip, puerto)
 
 #Función de creación y envío de hash
 def md5(connection, fname, hashrecibido, i):
+    print('llegamos4')
     mssg = ''
     exito = 0
     md5 = hashlib.md5()
@@ -75,17 +76,16 @@ def log(filenames, filesizes, exitos, tiempos):
 
 #Función para crear los clientes
 def createSocket(i, num_clientes):
-    sock = socket.create_connection(('localhost', 10002))
+    sock = socket.create_connection(('localhost', 10001))
     conexiones.append(i)
     udpsock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 
     while True:
         message = b'Listo para recibir'
         sock.send(message)
-        #received = sock.recv(BUFFER_SIZE).decode('ISO-8859-1')
-        received = udpsock.recvfrom(BUFFER_SIZE)
+        received = udpsock.recvfrom(BUFFER_SIZE).decode('ISO-8859-1')
         if('SEPARATOR' in received):
+            print('llegamos3')
             filenameF, filesizeF = received.split(SEPARATOR)
             newFilename = 'Cliente'+str(i+1)+'-Prueba'+str(num_clientes)+'.txt'
             newFilename = os.path.basename(newFilename)
