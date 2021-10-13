@@ -6,14 +6,17 @@ import hashlib
 import threading
 import time
 
-# Create a UDP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Bind the socket to the address given on the command line
-server_address = ('', 10000)
+ip=''
+puerto=10100
+server_address = (ip, 10002)
+
 sock.bind(server_address)
 print('starting up on {} port {}'.format(*sock.getsockname()))
-#sock.listen(25)
+sock.listen(25)
 
 # Separador
 SEPARATOR = "SEPARATOR"
@@ -50,10 +53,12 @@ BUFFER_SIZE = 1024
 
 
 #Función envío de archivos
-def archivo(num_archivo, c):
+def archivo(num_archivo, c, i):
     nombreArchivo = ''
     tamArchivo = 0
     arch = ''
+    #udpsock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    #udpsock.bind((ip,puerto+i))
     if (num_archivo == 1):
         nombreArchivo = filename1
         tamArchivo = filesize1
@@ -63,7 +68,7 @@ def archivo(num_archivo, c):
         tamArchivo = filesize2
         arch = file2
     start_time = datetime.now()
-    c.sendto(f"{nombreArchivo}{SEPARATOR}{tamArchivo}".encode(),server_address )
+    udpsock.sendto(f"{nombreArchivo}{SEPARATOR}{tamArchivo}", ip, puerto+i)
     with open(arch, "rb") as f:
         while True:
             bytes_read = f.read(BUFFER_SIZE)
@@ -72,13 +77,13 @@ def archivo(num_archivo, c):
                 tiempo = end_time - start_time
                 tiempos.append(tiempo)
                 break
-            c.sendto(bytes_read, server_address)
+            udpsock.sendto(bytes_read, ip, puerto+i)
     message = b'Finaliza transmision'
-    c.sendto(message, server_address)
-    md5(c, arch)
+    udpsock.sendto(message, ip, puerto+i)
+    md5(udpsock, arch, i)
 
 #Función de creación y envío de hash
-def md5(connection, fname):
+def md5(connection, fname, i):
     md5 = hashlib.md5()
     with open(fname, 'rb') as f:
         while True:
@@ -86,7 +91,7 @@ def md5(connection, fname):
             if not data:
                 break
             md5.update(data)
-    connection.sendto(md5.hexdigest().encode('ISO-8859-1'), server_address)
+    connection.sendto(md5.hexdigest().encode('ISO-8859-1'), ip, puerto+i)
     data = connection.recv(BUFFER_SIZE)
     mensaje2 = data.decode('utf-8')
     exito = 0
@@ -127,6 +132,9 @@ if __name__ == "__main__":
     elif (num_archivo == 2):
         nomArchivo = filename2
         tamArchivo = filesize2
+
+    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    udpsock.bind((ip, 65535))
     try:
         while True:
             connection, client_address = sock.accept()
@@ -136,17 +144,20 @@ if __name__ == "__main__":
             if mensaje == ('Listo para recibir'):
                 conexiones.append(connection)
             if len(conexiones) >= num_clientes:
+                i=1
                 for c in conexiones:
-                    x = threading.Thread(target=archivo, args=(num_archivo, c, ))
+                    x = threading.Thread(target=archivo, args=(num_archivo, c, i))
+
                     x.start()
                     time.sleep(1)
                     threads.append(x)
+                    i += 100
                 for x in threads:
                     x.join()
                 fin = True
                 break
     finally:
-        #filename = log(nomArchivo, tamArchivo, exitos, tiempos)
+      #  filename = log(nomArchivo, tamArchivo, exitos, tiempos)
         connection.close()
         if fin:
             break
