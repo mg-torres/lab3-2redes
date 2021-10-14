@@ -65,12 +65,11 @@ def log(filenames, filesizes, exitos, tiempos):
     logging.info('Tamaño archivo:' + str(filesizes[0]))
     i = 0
     for c in conexiones:
-        logging.info('Cliente ' + str(i))
+        logging.info('Cliente ' + str(i+1))
         if (exitos[i] == 1):
             logging.info('Archivo fue entregado exitosamente')
         else:
             logging.info('Archivo no fue entregado exitosamente')
-        print(len(tiempos))
         logging.info('Tiempo de transferencia archivo cliente ' + str(i+1) + ': '+ str(tiempos[i]) + " milisegundos")
         i += 1
     return filename
@@ -89,7 +88,7 @@ def createSocket(i, num_clientes):
             filenameF, filesizeF = received.decode('ISO-8859-1').split(SEPARATOR)
             newFilename = 'Cliente'+str(i)+'-Prueba'+str(num_clientes)+'.txt'
             newFilename = os.path.basename(newFilename)
-            var=os.path.join("./ArchivoRecibidos", newFilename)
+            var=os.path.join("./ArchivosRecibidos", newFilename)
             filesizeF = int(filesizeF)
             filenames.append(filenameF)
             filesizes.append(filesizeF)
@@ -99,7 +98,6 @@ def createSocket(i, num_clientes):
                 while True:
                     bytes_read, addr = udpsock.recvfrom(BUFFER_SIZE)
                     if ('Finaliza transmision' in bytes_read.decode('ISO-8859-1')):
-                        print(bytes_read.decode('ISO-8859-1'))
                         end_time = datetime.now()
                         tiempo = end_time - start_time
                         tiempos.append(tiempo)

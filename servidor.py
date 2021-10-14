@@ -43,7 +43,7 @@ tiempos = []
 exitos = []
 
 #Nombre log
-LOG_FILENAME = datetime.now().strftime('./LogsServidor/%Y_%m_%d_%H_%M_%S.log')
+LOG_FILENAME = datetime.now().strftime('./Logs/%Y_%m_%d_%H_%M_%S.log')
 
 #Variable para cerrar servidor
 fin = False
