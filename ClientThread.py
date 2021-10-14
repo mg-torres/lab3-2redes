@@ -14,7 +14,7 @@ SEPARATOR = "SEPARATOR"
 BUFFER_SIZE = 1024
 
 #Nombre log
-LOG_FILENAME = datetime.now().strftime('./Logs/%Y_%m_%d_%H_%M_%S_CLI.log')
+LOG_FILENAME = datetime.now().strftime('./Logs/%Y_%m_%d_%H_%M_%S.log')
 
 #Array vacio de conecciones
 conexiones = []
@@ -32,13 +32,13 @@ filenames = []
 filesizes = []
 
 #Puerto e ip
-ip=''
+ip='localhost'
 puerto=10100
+puerto2=65535
 server_address = (ip, puerto)
 
 #Función de creación y envío de hash
 def md5(connection, fname, hashrecibido, i):
-    print('llegamos4')
     mssg = ''
     exito = 0
     md5 = hashlib.md5()
@@ -55,7 +55,7 @@ def md5(connection, fname, hashrecibido, i):
         mssg = b'Los valores son diferentes'
         exito = 0
     exitos.append(exito)
-    connection.sendto(mssg, ip, puerto+i)
+    connection.send(mssg)
 
 #Función para crear el log
 def log(filenames, filesizes, exitos, tiempos):
@@ -63,31 +63,31 @@ def log(filenames, filesizes, exitos, tiempos):
     logging.basicConfig(filename = filename, encoding='utf-8', level=logging.INFO)
     logging.info('Nombre archivo:' + filenames[0])
     logging.info('Tamaño archivo:' + str(filesizes[0]))
-    i = 1
+    i = 0
     for c in conexiones:
         logging.info('Cliente ' + str(i))
-        if (exitos[i-1] == 1):
+        if (exitos[i] == 1):
             logging.info('Archivo fue entregado exitosamente')
         else:
             logging.info('Archivo no fue entregado exitosamente')
-        logging.info('Tiempo de transferencia archivo cliente ' + str(i) + ': '+ str(tiempos[i-1]) + " milisegundos")
+        print(len(tiempos))
+        logging.info('Tiempo de transferencia archivo cliente ' + str(i+1) + ': '+ str(tiempos[i]) + " milisegundos")
         i += 1
     return filename
 
 #Función para crear los clientes
 def createSocket(i, num_clientes):
-    sock = socket.create_connection(('localhost', 10001))
+    sock = socket.create_connection(('localhost', 10000))
     conexiones.append(i)
     udpsock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+    udpsock.bind((ip, puerto2-i))
     while True:
         message = b'Listo para recibir'
         sock.send(message)
-        received = udpsock.recvfrom(BUFFER_SIZE).decode('ISO-8859-1')
-        if('SEPARATOR' in received):
-            print('llegamos3')
-            filenameF, filesizeF = received.split(SEPARATOR)
-            newFilename = 'Cliente'+str(i+1)+'-Prueba'+str(num_clientes)+'.txt'
+        received, addr = udpsock.recvfrom(BUFFER_SIZE)
+        if('SEPARATOR' in received.decode('ISO-8859-1')):
+            filenameF, filesizeF = received.decode('ISO-8859-1').split(SEPARATOR)
+            newFilename = 'Cliente'+str(i)+'-Prueba'+str(num_clientes)+'.txt'
             newFilename = os.path.basename(newFilename)
             var=os.path.join("./ArchivoRecibidos", newFilename)
             filesizeF = int(filesizeF)
@@ -97,8 +97,9 @@ def createSocket(i, num_clientes):
             start_time = datetime.now()
             with open(var, "w") as f:
                 while True:
-                    bytes_read = udpsock.recvfrom(BUFFER_SIZE)
+                    bytes_read, addr = udpsock.recvfrom(BUFFER_SIZE)
                     if ('Finaliza transmision' in bytes_read.decode('ISO-8859-1')):
+                        print(bytes_read.decode('ISO-8859-1'))
                         end_time = datetime.now()
                         tiempo = end_time - start_time
                         tiempos.append(tiempo)
@@ -106,8 +107,8 @@ def createSocket(i, num_clientes):
                     f.write(bytes_read.decode('ISO-8859-1'))
         finally:
             f.close()
-            received = udpsock.recvfrom(BUFFER_SIZE).decode('ISO-8859-1')
-            md5(udpsock,var,received, i)
+            received= sock.recv(BUFFER_SIZE)
+            md5(sock,var,received.decode('ISO-8859-1'), i)
             fin = True
             print('closing socket')
             sock.close()
@@ -130,6 +131,6 @@ if __name__ == "__main__":
                 fin = True
                 break
         finally:
-            #filenameLog = log(filenames, filesizes, exitos, tiempos)
+            filenameLog = log(filenames, filesizes, exitos, tiempos)
             if fin:
                 break
