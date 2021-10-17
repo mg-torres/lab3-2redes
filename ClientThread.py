@@ -6,6 +6,7 @@ import time
 import threading
 import logging
 from datetime import datetime
+import pyshark
 
 #Separador
 SEPARATOR = "SEPARATOR"
@@ -31,11 +32,12 @@ fin = False
 filenames = []
 filesizes = []
 
-#Puerto e ip
-ip='localhost'
-puerto=10100
+#Puertos e ip
+#IP servidor
+ipServ='localhost'
+ipCli='localhost'
+#Puerto sockets UDP
 puerto2=65535
-server_address = (ip, puerto)
 
 #Función de creación y envío de hash
 def md5(connection, fname, hashrecibido, i):
@@ -76,14 +78,15 @@ def log(filenames, filesizes, exitos, tiempos):
 
 #Función para crear los clientes
 def createSocket(i, num_clientes):
-    sock = socket.create_connection(('localhost', 10000))
+    sock = socket.create_connection((ipServ, 10000))
     conexiones.append(i)
     udpsock= socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udpsock.bind((ip, puerto2-i))
+    time.sleep(1)
+    udpsock.bind((ipCli, puerto2-i))
     while True:
         message = b'Listo para recibir'
         sock.send(message)
-        received, addr = udpsock.recvfrom(BUFFER_SIZE)
+        received = sock.recv(BUFFER_SIZE)
         if('SEPARATOR' in received.decode('ISO-8859-1')):
             filenameF, filesizeF = received.decode('ISO-8859-1').split(SEPARATOR)
             newFilename = 'Cliente'+str(i)+'-Prueba'+str(num_clientes)+'.txt'
@@ -103,8 +106,8 @@ def createSocket(i, num_clientes):
                         tiempos.append(tiempo)
                         break
                     f.write(bytes_read.decode('ISO-8859-1'))
-        finally:
             f.close()
+        finally:
             received= sock.recv(BUFFER_SIZE)
             md5(sock,var,received.decode('ISO-8859-1'), i)
             fin = True
